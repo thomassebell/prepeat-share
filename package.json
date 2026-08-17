@@ -1,0 +1,10 @@
+{
+  "name": "prepeat-share",
+  "private": true,
+  "type": "module",
+  "description": "Server-rendered share pages for Prep+Eat recipes (share.prepeat.app).",
+  "scripts": {
+    "dev": "node dev-server.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

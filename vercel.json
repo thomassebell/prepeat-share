@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/r/:token", "destination": "/api/r/:token" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "https://prepeat.app", "permanent": false }
+  ]
+}
