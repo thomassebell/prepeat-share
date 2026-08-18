@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/og/:token",
+      "destination": "/api/og/:token"
+    },
+    {
       "source": "/r/:token",
       "destination": "/api/r/:token"
     }
