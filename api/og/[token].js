@@ -1,11 +1,10 @@
 import { ImageResponse } from '@vercel/og';
 
-import { credentialsFor } from '../../lib/render.mjs';
-
 export const config = { runtime: 'edge' };
 
 /**
- * The chat preview image, generated per recipe.
+ * The chat preview image – Thomas's design, Figma "The chat card" on the
+ * Recipes page (1200×630).
  *
  * ⚠️ THIS IS NOT DECORATION. Proved on a device 2026-08-18: a share page WITHOUT
  * `og:image` gets no card at all in iMessage - just a grey bubble reading
@@ -14,20 +13,28 @@ export const config = { runtime: 'edge' };
  * 93 of 97 recipes have no publishable photo, so without this endpoint 93 of 97
  * shares arrive as a bare grey link.
  *
- * Design: the mocha card from docs/sketches/share-flow-review.html, chosen by
- * Thomas 2026-08-18 as an interim "till my design lands". Mocha rather than
- * lime because at the size a card is actually seen - about 236px wide - lime
- * reads as a bright green rectangle before it reads as anything, and a chat is
- * already full of colour.
+ * ⚠️ THE CARD CARRIES NOTHING PER-RECIPE, AND THAT IS THE DESIGN. It is the
+ * wordmark on surface/secondary and nothing else. Two consequences, both
+ * deliberate:
  *
- * ⚠️ REPLACE THE LAYOUT BELOW WHEN THOMAS'S FRAME ARRIVES, not the plumbing.
+ *   1. **No title on the card.** The interim card (mine, replaced 2026-08-18)
+ *      burnt the recipe title into the image, so a chat bubble showed the title
+ *      TWICE - once inside the picture and once as the link title underneath.
+ *      Thomas saw that on a real TestFlight share and it is what this replaces.
+ *   2. **No token lookup.** Every card is byte-identical, so this no longer
+ *      reads the token, calls the database or sizes type to the title length.
+ *      The route still takes a token because links already sent point at
+ *      `/og/<token>.png` and must keep resolving - the token is simply ignored.
+ *
+ * Values are Thomas's, read from the frame's bound variables rather than its
+ * CSS fallbacks (which are stale): background `color/surface/secondary/main`
+ * #6F5D44, the "+" in `text/link` #56C91D, the rest white.
  */
 
-const MOCHA = '#4F4230';
-const MOCHA_DEEP = '#3A3123';
-const LIME_LIGHT = '#83E651';
+const SURFACE_SECONDARY = '#6F5D44';
+const LINK_GREEN = '#56C91D';
 
-// Fetched once per edge instance. prepeat.app serves these with CORS, and it is
+// Fetched once per edge instance. prepeat.app serves this with CORS, and it is
 // the same file the app and the page use, so the card cannot drift in type.
 let montserratPromise;
 function montserrat() {
@@ -38,53 +45,12 @@ function montserrat() {
   return montserratPromise;
 }
 
-/**
- * Type size by title length. Titles run 6 to 72 characters (median 19), so one
- * fixed size cannot work: "Pad Krapow" looks lost at the small size and the
- * 72-character banana bread runs off the card at the large one.
- */
-function titleSize(title) {
-  const n = title.length;
-  if (n <= 16) return 108;
-  if (n <= 28) return 88;
-  if (n <= 44) return 68;
-  return 52;
-}
+const line = (children) => ({
+  type: 'div',
+  props: { style: { display: 'flex', fontSize: 200, lineHeight: 1.12 }, children },
+});
 
-export default async function handler(req) {
-  const url = new URL(req.url);
-  // The route captures the whole segment, so `abc.png` arrives with the
-  // extension attached - fetchers like an image-looking URL.
-  const token = (url.pathname.split('/').pop() ?? '').replace(/\.png$/, '');
-  // Same host-decides-the-database rule as the page, or a dev share's card
-  // would be generated from production and come back generic.
-  const { supabaseUrl, anonKey } = credentialsFor(
-    req.headers.get('x-forwarded-host') ?? url.host,
-  );
-
-  let title = 'A shared recipe';
-  if (/^[0-9a-f]{32}$/.test(token)) {
-    try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/share_by_token`, {
-        method: 'POST',
-        headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ p_token: token }),
-      });
-      const rows = await res.json();
-      const row = Array.isArray(rows) ? rows[0] : null;
-      // A revoked share still returns a row, with a null title, so the generic
-      // wording means a stale card never shows a recipe no longer shared.
-      if (row?.title) title = row.title;
-    } catch {
-      // Fall through to the generic card: a preview must never 500, or the
-      // message loses its card over a database blip.
-    }
-  }
-
+export default async function handler() {
   return new ImageResponse(
     {
       type: 'div',
@@ -94,31 +60,20 @@ export default async function handler(req) {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          // 72px all round: some apps crop the card to a square, taking ~285px
-          // off each side, so nothing may sit near an edge.
-          padding: '72px',
-          backgroundImage: `linear-gradient(150deg, ${MOCHA} 0%, ${MOCHA_DEEP} 100%)`,
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          paddingLeft: 168,
+          paddingRight: 168,
+          backgroundColor: SURFACE_SECONDARY,
           fontFamily: 'Montserrat',
+          color: '#FFFFFF',
         },
         children: [
-          {
-            type: 'div',
-            props: { style: { fontSize: 34, color: LIME_LIGHT }, children: 'prep+eat' },
-          },
-          {
-            type: 'div',
-            props: {
-              style: {
-                fontSize: titleSize(title),
-                color: '#FFFFFF',
-                lineHeight: 1.08,
-                // satori needs an explicit width to wrap: 1200 less the padding.
-                maxWidth: 1056,
-              },
-              children: title,
-            },
-          },
+          line('prep'),
+          line([
+            { type: 'span', props: { style: { color: LINK_GREEN }, children: '+' } },
+            { type: 'span', props: { children: 'eat' } },
+          ]),
         ],
       },
     },
@@ -127,7 +82,8 @@ export default async function handler(req) {
       height: 630,
       fonts: [{ name: 'Montserrat', data: await montserrat(), weight: 700, style: 'normal' }],
       headers: {
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+        // Identical for every share now, so it can be cached hard.
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
       },
     },
   );
