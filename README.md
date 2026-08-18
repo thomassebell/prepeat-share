@@ -79,10 +79,16 @@ imported and only 4 are hand-written *with* a photo. So the rich card is the rar
 case and the text card is the norm – for a growth feature, in the exact place the
 growth happens.
 
-The fix is to generate the title card as a PNG (`satori` + `resvg`, or
-`@vercel/og`) and point `og:image` at it. Deliberately not done in the first
-version: it is the only thing here that needs a dependency and a build step, and
-it should be measured rather than assumed. Nothing else blocks on it.
+⚠️ **MEASURED 2026-08-18, AND IT IS WORSE THAN "WEAKER": THERE IS NO CARD AT
+ALL.** Two share links, same server, same tags, one with `og:image` and one
+without. The one with an image previewed with the photo on both sides. The one
+without showed "Tap to Load Preview" and, when tapped, collapsed to a grey bubble
+reading `share.prepeat.app` with a Safari icon. **iMessage's rich link is
+image-led** – a title and a description alone do not earn a card.
+
+So `og:image` is not an enhancement here, it is the precondition for a preview
+existing. Generating the title card as a PNG (`satori` + `resvg`, or
+`@vercel/og`) is the fix, and it is the last thing between sharing and working.
 
 ## Fonts come from prepeat.app
 
