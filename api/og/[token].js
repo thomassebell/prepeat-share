@@ -1,6 +1,6 @@
 import { ImageResponse } from '@vercel/og';
 
-import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '../../lib/render.mjs';
+import { credentialsFor } from '../../lib/render.mjs';
 
 export const config = { runtime: 'edge' };
 
@@ -56,15 +56,20 @@ export default async function handler(req) {
   // The route captures the whole segment, so `abc.png` arrives with the
   // extension attached - fetchers like an image-looking URL.
   const token = (url.pathname.split('/').pop() ?? '').replace(/\.png$/, '');
+  // Same host-decides-the-database rule as the page, or a dev share's card
+  // would be generated from production and come back generic.
+  const { supabaseUrl, anonKey } = credentialsFor(
+    req.headers.get('x-forwarded-host') ?? url.host,
+  );
 
   let title = 'A shared recipe';
   if (/^[0-9a-f]{32}$/.test(token)) {
     try {
-      const res = await fetch(`${DEFAULT_SUPABASE_URL}/rest/v1/rpc/share_by_token`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/share_by_token`, {
         method: 'POST',
         headers: {
-          apikey: DEFAULT_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${DEFAULT_SUPABASE_ANON_KEY}`,
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ p_token: token }),

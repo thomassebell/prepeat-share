@@ -3,22 +3,22 @@
 // Deliberately thin: everything real lives in lib/render.mjs so it can run
 // unchanged under dev-server.mjs and be tested with plain node.
 
-import {
-  handleShareRequest,
-  DEFAULT_SUPABASE_URL,
-  DEFAULT_SUPABASE_ANON_KEY,
-} from '../../lib/render.mjs';
+import { handleShareRequest, credentialsFor } from '../../lib/render.mjs';
 
 export default async function handler(req, res) {
   const token = Array.isArray(req.query.token) ? req.query.token[0] : req.query.token;
   const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'share.prepeat.app';
   const url = `https://${host}/r/${token ?? ''}`;
 
+  // The HOST picks the database: share-dev.prepeat.app reads dev, so a link
+  // made by the dev app on the phone resolves. Env vars still win, which is how
+  // dev-server.mjs points anywhere it likes.
+  const creds = credentialsFor(host);
   const { status, html, cacheControl } = await handleShareRequest({
     token,
     url,
-    supabaseUrl: process.env.SUPABASE_URL ?? DEFAULT_SUPABASE_URL,
-    anonKey: process.env.SUPABASE_ANON_KEY ?? DEFAULT_SUPABASE_ANON_KEY,
+    supabaseUrl: process.env.SUPABASE_URL ?? creds.supabaseUrl,
+    anonKey: process.env.SUPABASE_ANON_KEY ?? creds.anonKey,
   });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
