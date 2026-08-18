@@ -108,14 +108,27 @@ means the deploy is self-contained. The env vars still win, which is how
 `vercel deploy --temporary`: a real share of a real recipe rendered correctly,
 and revoking it took the page down 36 seconds later (inside the 60s cache).
 
-**Not yet permanently deployed.** The Vercel token available here can read the
-team but not create a project – `403 forbidden: You don't have permission to
-create a project`. Needs Thomas:
+**LIVE at https://share.prepeat.app since 2026-08-17.** DNS is a CNAME on
+`share` at Porkbun pointing to a project-specific Vercel host; the certificate
+issued about a minute after the record propagated.
 
-1. Create the `prepeat-share` project (or grant project-creation rights).
-2. Point `share.prepeat.app` at it.
-3. Then ungate the app's Share action, which is deliberately dev-app-only until
-   a link resolves.
+To ship a change:
+
+```sh
+npx vercel deploy --prod --yes     # from this folder, which is linked
+```
+
+The folder is linked to project `prj_sauXQqDDRcS5BSPS6vrre9v9RdUX` in
+`sebellds-projects`. `vercel link` wrote `.env.local`, which holds an OIDC token
+and is gitignored – do not commit it.
+
+⚠️ **There is no Git integration yet**, so a deploy only happens when someone
+runs that command. Connecting a GitHub repo would make pushes deploy themselves
+and is worth doing before anyone else touches this.
+
+⚠️ **DNS warning for anyone editing Porkbun:** `prepeat.app` itself and `www`
+point at GitHub Pages and serve the privacy and support pages App Store Connect
+requires for the LIVE listing. Only ever ADD records for `share`.
 
 ## Revocation is not instant
 
