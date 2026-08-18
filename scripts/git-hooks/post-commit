@@ -1,0 +1,45 @@
+#!/bin/sh
+# Push main to origin after every commit, so work is never local-only for long.
+#
+# Why this exists: this repo IS the live share host - share.prepeat.app, the page every shared recipe link lands on, plus the card generator and the dev/production split. Until 2026-08-18 it had EIGHT COMMITS AND NO REMOTE AT ALL: Vercel held the deployed copy, and nothing held the source. That is worse than the failure this hook was written for, where at least a remote existed to push to.
+#
+# The wider reason, 2026-08-11: Prep+Eat gained this hook on 2026-08-10 after
+# pushing silently stopped and 43 commits sat unbacked on one Mac for three
+# days. Fixing only that repo moved the failure rather than ending it - a
+# commit was found four days unpushed in design-system the next week. So the
+# hook is now a habit across every repo, including the quiet ones.
+#
+# The Mac this runs on belongs to an employer and goes back on a date nobody
+# controls. Anything local-only has that deadline attached to it.
+#
+# ⚠️ THIS IS THE SOURCE: scripts/git-hooks/post-commit. The copy git actually
+# runs lives in .git/hooks/, which is NOT version controlled. Editing this file
+# does nothing until you re-run ./scripts/install-git-hooks.sh
+#
+# That path is load-bearing, not decoration: install-git-hooks.sh recognises its
+# own hooks by grepping the installed copy for "scripts/git-hooks", so a hook
+# missing that string can never be updated by the installer.
+#
+# Deliberately conservative:
+#   - main only. Other branches are yours to push when you mean to.
+#   - never --force, so a rewritten history fails loudly.
+#   - backgrounded, so a slow network never makes a commit feel stuck.
+#   - silent when it works, loud when it does not.
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+[ "$branch" = "main" ] || exit 0
+git remote get-url origin >/dev/null 2>&1 || exit 0
+
+log="$(git rev-parse --git-dir)/autopush.log"
+
+(
+  if out=$(git push --quiet origin main 2>&1); then
+    printf '%s  pushed %s\n' "$(date '+%F %T')" "$(git rev-parse --short HEAD)" >>"$log"
+  else
+    printf '%s  FAILED\n%s\n\n' "$(date '+%F %T')" "$out" >>"$log"
+    printf '\n  ⚠️  auto-push failed — this commit is LOCAL ONLY\n     %s\n     retry with:  git push origin main\n\n' \
+      "$(printf '%s' "$out" | grep -v '^$' | tail -1)" >&2
+  fi
+) &
+
+exit 0
