@@ -84,9 +84,43 @@ The fix is to generate the title card as a PNG (`satori` + `resvg`, or
 version: it is the only thing here that needs a dependency and a build step, and
 it should be measured rather than assumed. Nothing else blocks on it.
 
-## Deploying (not done yet)
+## Fonts come from prepeat.app
 
-Needs Thomas: a Vercel project, `share.prepeat.app` pointed at it, and the two
-env vars set to **production** Supabase. `SUPABASE_ANON_KEY` is the publishable
-key that already ships inside the app, so it is not a secret – but it must be the
-production one, or shares made by real users will not resolve.
+`https://prepeat.app/fonts/*.ttf`, which GitHub Pages serves with
+`access-control-allow-origin: *` (checked 2026-08-17). Deliberate: it keeps this
+project text-only so it can be deployed from a file tree, and the fonts are
+first-party, so the "no third-party tracking" reason for self-hosting still
+holds. The cost is a soft dependency – if those files move, the type silently
+falls back. Self-host them here if this project ever gets a git-based deploy.
+
+## Supabase details are in the code, on purpose
+
+`DEFAULT_SUPABASE_URL` and `DEFAULT_SUPABASE_ANON_KEY` in `lib/render.mjs` point
+at **production**. Neither is a secret: both ship inside every copy of the app,
+and migration 0034 leaves the anon role able to do exactly one thing – call
+`share_by_token()`, which needs a token it cannot guess. Having them in the code
+means the deploy is self-contained. The env vars still win, which is how
+`dev-server.mjs` points at the dev project.
+
+## Deploying
+
+**Verified working against production on 2026-08-17** via an anonymous
+`vercel deploy --temporary`: a real share of a real recipe rendered correctly,
+and revoking it took the page down 36 seconds later (inside the 60s cache).
+
+**Not yet permanently deployed.** The Vercel token available here can read the
+team but not create a project – `403 forbidden: You don't have permission to
+create a project`. Needs Thomas:
+
+1. Create the `prepeat-share` project (or grant project-creation rights).
+2. Point `share.prepeat.app` at it.
+3. Then ungate the app's Share action, which is deliberately dev-app-only until
+   a link resolves.
+
+## Revocation is not instant
+
+Live pages are cached for 60 seconds at the edge, so a revoked link keeps
+working for up to a minute (measured: 36s). That is the deliberate trade – the
+alternative is `no-store`, which sends every unfurl bot and every reader
+straight through to Supabase. Worth revisiting if revocation ever needs to be
+immediate.
