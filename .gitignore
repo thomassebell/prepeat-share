@@ -3,3 +3,6 @@ node_modules/
 .env*
 
 .vercel
+
+# generated from node_modules by scripts/build-css.mjs
+lib/ds-css.mjs
