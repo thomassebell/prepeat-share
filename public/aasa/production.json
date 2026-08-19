@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "Z58TG8X9KB.app.prepeat"
+        ],
+        "components": [
+          {
+            "/": "/r/*",
+            "comment": "A shared recipe opens in Prep+Eat instead of the browser."
+          }
+        ]
+      }
+    ]
+  }
+}

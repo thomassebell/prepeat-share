@@ -1,6 +1,20 @@
 {
   "rewrites": [
     {
+      "source": "/.well-known/apple-app-site-association",
+      "has": [
+        {
+          "type": "host",
+          "value": "share-dev.prepeat.app"
+        }
+      ],
+      "destination": "/aasa/dev.json"
+    },
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "destination": "/aasa/production.json"
+    },
+    {
       "source": "/og/:token",
       "destination": "/api/og/:token"
     },

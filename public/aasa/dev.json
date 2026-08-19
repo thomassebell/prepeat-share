@@ -3,13 +3,12 @@
     "details": [
       {
         "appIDs": [
-          "Z58TG8X9KB.app.prepeat",
           "Z58TG8X9KB.app.prepeat.dev"
         ],
         "components": [
           {
             "/": "/r/*",
-            "comment": "A shared recipe opens in Prep+Eat instead of the browser."
+            "comment": "A shared recipe opens in the DEV build of Prep+Eat instead of the browser."
           }
         ]
       }
